@@ -1,0 +1,38 @@
+{
+  "appid": "",
+  "title": null,
+  "titleLink": null,
+  "webscene": "default",
+  "portalUrl": "https://www.arcgis.com",
+  "insetPosition": "bottom-left",
+  "insetExpand": false,
+  "controlPosition": "bottom-right",
+  "splitDirection": "vertical",
+  "insetBasemap": null,
+  "locationColor": "333",
+  "oauthappid": "",
+  "proxyUrl": "",
+  "search": true,
+  "searchPosition": "top-right",
+  "measurement": false,
+  "measurementPosition": "top-right",
+  "splash": false,
+  "splashOnStart": false,
+  "splashDesc": "Description goes here",
+  "splashTitle": "Splash screen title",
+  "splashButtonLabel": "Ok",
+  "helperServices": {
+    "geometry": {
+      "url": null
+    },
+    "printTask": {
+      "url": null
+    },
+    "elevationSync": {
+      "url": null
+    },
+    "geocode": [{
+      "url": null
+    }]
+  }
+}
