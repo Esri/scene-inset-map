@@ -17,7 +17,3 @@ This application is responsively designed to support use in browsers on desktops
 # Data Requirements
 This application has no data requirements.
 
-# Get Started 
-This application can be created in the following ways:
-Click the Create a Web App button on this page
-Click the Download button to access the source code. Do this if you want to host the app on your own server and optionally customize it to add features or change styling.
