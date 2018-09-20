@@ -26,6 +26,7 @@
     "viewpoint",
     "webscene",
     "webmap",
+    "useWebMap",
     "insetPosition",
     "controlPosition",
     "splitDirection",

@@ -36,8 +36,7 @@ import {
   getConfigViewProperties,
   getItemTitle,
   findQuery,
-  goToMarker,
-  createWebMapFromItem
+  goToMarker
 } from "ApplicationBase/support/itemUtils";
 
 import {
@@ -45,13 +44,6 @@ import {
   setPageDirection,
   setPageTitle
 } from "ApplicationBase/support/domHelper";
-
-import {
-  ApplicationConfig,
-  ApplicationBaseSettings
-} from "ApplicationBase/interfaces";
-
-import Expand = require("esri/widgets/Expand");
 
 declare var calcite: any;
 class SceneExample {
@@ -83,7 +75,7 @@ class SceneExample {
 
     this.base = base;
 
-    const { config, results, settings } = base;
+    const { config, results } = base;
     const { find, marker } = config;
     const { webSceneItems } = results;
 
@@ -100,30 +92,41 @@ class SceneExample {
     config.title = !config.title ? getItemTitle(firstItem) : config.title;
     setPageTitle(config.title);
 
-
-    if (config.titleLink) {
-      config.title = `<a href="${config.titleLink}" >${config.title}</a>`;
+    if (config.titlelink) {
+      config.title = `<a href="${config.titlelink}" >${config.title}</a>`;
     }
 
     document.getElementById("title").innerHTML = config.title;
     const portalItem: any = this.base.results.applicationItem.value;
     const appProxies =
-      portalItem && portalItem.applicationProxies ? portalItem.applicationProxies : null;
+      portalItem && portalItem.applicationProxies
+        ? portalItem.applicationProxies
+        : null;
 
-    // Setup splash screen if enabled 
+    // Setup splash screen if enabled
     if (this.base.config.splash) {
       calcite.init();
       const splashButton = document.getElementById("splashButton");
       splashButton.classList.remove("hide");
+      splashButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" class="svg-icon">
+                <path d="M31.297 16.047c0 8.428-6.826 15.25-15.25 15.25S.797 24.475.797 16.047c0-8.424 6.826-15.25 15.25-15.25s15.25 6.826 15.25 15.25zM18 24V12h-4v12h-2v2h8v-2h-2zm0-18h-4v4h4V6z"
+                />
+              </svg>${i18n.tools.about}`;
 
-      document.getElementById("splashContent").innerHTML = this.base.config.splashDesc;
-      document.getElementById("splashTitle").innerHTML = this.base.config.splashTitle;
-      document.getElementById("splashOkButton").innerHTML = this.base.config.splashButtonLabel;
+      document.getElementById(
+        "splashContent"
+      ).innerHTML = this.base.config.splashDesc;
+      document.getElementById(
+        "splashTitle"
+      ).innerHTML = this.base.config.splashTitle;
+      document.getElementById(
+        "splashOkButton"
+      ).innerHTML = this.base.config.splashButtonLabel;
 
       if (this.base.config.splashOnStart) {
-        // enable splash screen when app loads then 
-        // set info in session storage when its closed 
-        // so we don't open again this session. 
+        // enable splash screen when app loads then
+        // set info in session storage when its closed
+        // so we don't open again this session.
         if (!sessionStorage.getItem("disableSplash")) {
           calcite.bus.emit("modal:open", { id: "splash" });
         }
@@ -138,62 +141,152 @@ class SceneExample {
     }
     const defaultViewProperties = getConfigViewProperties(config);
     const item = firstItem;
-
+    const contDiv = document.createElement("div");
+    document.getElementById("mapMain").appendChild(contDiv);
     const container = {
-      container: document.getElementById("mapMain")//viewNode
+      container: contDiv
     };
 
     const viewProperties = {
       ...defaultViewProperties,
       ...container
     };
+    if (base.config.transparentBackground && base.config.backgroundColor) {
+      viewProperties.alphaCompositingEnabled = true;
+      viewProperties.environment = {
+        background: {
+          type: "color",
+          color: base.config.backgroundColor
+        },
+        starsEnabled: false,
+        atmosphereEnabled: false
+      };
+    }
 
-    const { basemapUrl, basemapReferenceUrl } = config;
     createMapFromItem({ item, appProxies }).then(map =>
       createView({
         ...viewProperties,
         map
       }).then(view => {
         view.when(async () => {
-          const insetMap = new InsetMap({ mainView: view, config: this.base.config });
+          this.base.config.appProxies = appProxies;
+          const insetMap = new InsetMap({
+            mainView: view,
+            config: this.base.config
+          });
           insetMap.createInsetView();
-          // Get inset view when ready 
-          insetMap.watch("insetView", () => {
-            const insetView = insetMap.insetView;
-          })
         });
         findQuery(find, view).then(() => goToMarker(marker, view));
         this._addMeasureWidgets(view, this.base.config);
+        this._addHome(view, this.base.config);
+        this._addSearch(view, this.base.config);
+        this._createSlideGallery(view, this.base.config);
       })
     );
-
     document.body.classList.remove(CSS.loading);
   }
+  async _addHome(view, config) {
+    if (config.home) {
+      const homeRequire = await requireUtils.when(require, [
+        "esri/widgets/Home"
+      ]);
+      if (homeRequire && homeRequire.length && homeRequire.length > 0) {
+        const Home = homeRequire[0];
 
+        const homeWidget = new Home({
+          view
+        });
+
+        view.ui.add(homeWidget, config.homePosition);
+      }
+    }
+  }
+  async _addSearch(view, config) {
+    if (config.search) {
+      const searchRequire = await requireUtils.when(require, [
+        "esri/widgets/Search",
+        "esri/widgets/Expand"
+      ]);
+      if (searchRequire && searchRequire.length && searchRequire.length > 1) {
+        const Search = searchRequire[0];
+        const Expand = searchRequire[1];
+        const searchWidget = new Search({
+          view,
+          locationEnabled: true
+        });
+        const expandSearch = new Expand({
+          view,
+          content: searchWidget
+        });
+        if (config.searchExpanded) {
+          expandSearch.expand();
+        }
+        view.ui.add(expandSearch, config.searchPosition);
+      }
+    }
+  }
+  async _createSlideGallery(view, config) {
+    // If the scene contains slides add custom scene view widget to app
+    if (config.slides) {
+      if (
+        view &&
+        view.map &&
+        view.map.presentation &&
+        view.map.presentation.slides &&
+        view.map.presentation.slides.length > 0
+      ) {
+        const slideRequire = await requireUtils.when(require, [
+          "esri/widgets/Expand",
+          "./CustomBookmarks"
+        ]);
+        if (slideRequire && slideRequire.length && slideRequire.length > 1) {
+          const Expand = slideRequire[0];
+          const CustomBookmarks = slideRequire[1];
+
+          const slideContainer = new CustomBookmarks({
+            view
+          });
+          slideContainer.containerTitle = this.base.config.slidesTitle;
+
+          const expand = new Expand({
+            view: view,
+            content: slideContainer,
+            group: config.slidePosition
+          });
+          view.ui.add(expand, config.slidesPosition);
+        }
+      }
+    }
+  }
   async _addMeasureWidgets(view, config) {
     if (config.measurement) {
       const measureRequire = await requireUtils.when(require, [
-        "esri/widgets/DirectLineMeasurement3D", "esri/widgets/AreaMeasurement3D"
+        "esri/widgets/DirectLineMeasurement3D",
+        "esri/widgets/AreaMeasurement3D"
       ]);
-      if (measureRequire && measureRequire.length && measureRequire.length > 1) {
+      if (
+        measureRequire &&
+        measureRequire.length &&
+        measureRequire.length > 1
+      ) {
         const DirectLineMeasurement3D = measureRequire[0];
         const AreaMeasurement3D = measureRequire[1];
 
         const nav = document.createElement("nav");
-        nav.classList.add("leader-1")
+        nav.classList.add("leader-1");
 
         let measureTool = null;
         let type;
         nav.appendChild(this._createMeasureButton("area"));
         nav.appendChild(this._createMeasureButton("line"));
-        nav.addEventListener("click", (e) => {
-          const button = e.target as HTMLButtonElement
+        nav.addEventListener("click", e => {
+          const button = e.target as HTMLButtonElement;
 
           if (measureTool) {
             measureTool.destroy();
             view.ui.remove(measureTool);
           }
-          // don't recreate if its the same button 
+          // don't recreate if its the same button
           if (type && type === button.dataset.type) {
             type = null;
           } else {
@@ -209,54 +302,24 @@ class SceneExample {
             }
             view.ui.add(measureTool, config.measurementPosition);
           }
-
         });
-        /* const areaButton = document.createElement("button");
-         areaButton.classList.add("esri-widget-button", "btn", "btn-grouped", "esri-icon-polygon");
-         areaButton.title = i18n.tools.measureArea;
-         areaButton.setAttribute("aria-label", i18n.tools.measureArea);
-         areaButton.addEventListener("click", () => {
-           if (measureTool) {
-             measureTool.destroy();
-             view.ui.remove(measureTool);
-           }
-           measureTool = new AreaMeasurement3D({
-             view: view
-           });
-           view.ui.add(measureTool, config.measurementPosition);
-         });
-         nav.appendChild(areaButton);
-         const lineButton = document.createElement("button");
-         lineButton.classList.add("esri-widget-button", "btn", "btn-grouped", "esri-icon-polyline");
-         lineButton.title = i18n.tools.measureLine;
-         lineButton.setAttribute("aria-label", i18n.tools.measureLine);
-         lineButton.addEventListener("click", () => {
-           if (measureTool) {
-             measureTool.destroy();
-             view.ui.remove(measureTool);
-           }
-           measureTool = new DirectLineMeasurement3D({
-             view: view
-           });
-           view.ui.add(measureTool, config.measurementPosition);
-         });
-         nav.appendChild(lineButton);*/
         view.ui.add(nav, config.measurementPosition);
-
-
-
       }
-
-
-
     }
   }
   _createMeasureButton(type) {
     const button = document.createElement("button");
     const icon = type === "area" ? "esri-icon-polygon" : "esri-icon-polyline";
-    const label = type === "area" ? i18n.tools.measureArea : i18n.tools.measureLine;
+    const label =
+      type === "area" ? i18n.tools.measureArea : i18n.tools.measureLine;
     button.dataset.type = type;
-    button.classList.add("esri-widget-button", "btn", "btn-grouped", icon);
+    button.classList.add(
+      "esri-widget-button",
+      "btn",
+      "btn-white",
+      "btn-grouped",
+      icon
+    );
     button.title = label;
 
     button.setAttribute("aria-label", label);

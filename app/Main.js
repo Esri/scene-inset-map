@@ -42,8 +42,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -93,7 +93,7 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
             domHelper_1.setPageLocale(base.locale);
             domHelper_1.setPageDirection(base.direction);
             this.base = base;
-            var config = base.config, results = base.results, settings = base.settings;
+            var config = base.config, results = base.results;
             var find = config.find, marker = config.marker;
             var webSceneItems = results.webSceneItems;
             var validWebSceneItems = webSceneItems.map(function (response) {
@@ -106,24 +106,27 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
             }
             config.title = !config.title ? itemUtils_1.getItemTitle(firstItem) : config.title;
             domHelper_1.setPageTitle(config.title);
-            if (config.titleLink) {
-                config.title = "<a href=\"" + config.titleLink + "\" >" + config.title + "</a>";
+            if (config.titlelink) {
+                config.title = "<a href=\"" + config.titlelink + "\" >" + config.title + "</a>";
             }
             document.getElementById("title").innerHTML = config.title;
             var portalItem = this.base.results.applicationItem.value;
-            var appProxies = portalItem && portalItem.applicationProxies ? portalItem.applicationProxies : null;
-            // Setup splash screen if enabled 
+            var appProxies = portalItem && portalItem.applicationProxies
+                ? portalItem.applicationProxies
+                : null;
+            // Setup splash screen if enabled
             if (this.base.config.splash) {
                 calcite.init();
                 var splashButton = document.getElementById("splashButton");
                 splashButton.classList.remove("hide");
+                splashButton.innerHTML = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" class=\"svg-icon\">\n                <path d=\"M31.297 16.047c0 8.428-6.826 15.25-15.25 15.25S.797 24.475.797 16.047c0-8.424 6.826-15.25 15.25-15.25s15.25 6.826 15.25 15.25zM18 24V12h-4v12h-2v2h8v-2h-2zm0-18h-4v4h4V6z\"\n                />\n              </svg>" + i18n.tools.about;
                 document.getElementById("splashContent").innerHTML = this.base.config.splashDesc;
                 document.getElementById("splashTitle").innerHTML = this.base.config.splashTitle;
                 document.getElementById("splashOkButton").innerHTML = this.base.config.splashButtonLabel;
                 if (this.base.config.splashOnStart) {
-                    // enable splash screen when app loads then 
-                    // set info in session storage when its closed 
-                    // so we don't open again this session. 
+                    // enable splash screen when app loads then
+                    // set info in session storage when its closed
+                    // so we don't open again this session.
                     if (!sessionStorage.getItem("disableSplash")) {
                         calcite.bus.emit("modal:open", { id: "splash" });
                     }
@@ -137,30 +140,143 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
             }
             var defaultViewProperties = itemUtils_1.getConfigViewProperties(config);
             var item = firstItem;
+            var contDiv = document.createElement("div");
+            document.getElementById("mapMain").appendChild(contDiv);
             var container = {
-                container: document.getElementById("mapMain") //viewNode
+                container: contDiv
             };
             var viewProperties = __assign({}, defaultViewProperties, container);
-            var basemapUrl = config.basemapUrl, basemapReferenceUrl = config.basemapReferenceUrl;
+            if (base.config.transparentBackground && base.config.backgroundColor) {
+                viewProperties.alphaCompositingEnabled = true;
+                viewProperties.environment = {
+                    background: {
+                        type: "color",
+                        color: base.config.backgroundColor
+                    },
+                    starsEnabled: false,
+                    atmosphereEnabled: false
+                };
+            }
             itemUtils_1.createMapFromItem({ item: item, appProxies: appProxies }).then(function (map) {
                 return itemUtils_1.createView(__assign({}, viewProperties, { map: map })).then(function (view) {
                     view.when(function () { return __awaiter(_this, void 0, void 0, function () {
                         var insetMap;
                         return __generator(this, function (_a) {
-                            insetMap = new InsetMap_1.default({ mainView: view, config: this.base.config });
-                            insetMap.createInsetView();
-                            // Get inset view when ready 
-                            insetMap.watch("insetView", function () {
-                                var insetView = insetMap.insetView;
+                            this.base.config.appProxies = appProxies;
+                            insetMap = new InsetMap_1.default({
+                                mainView: view,
+                                config: this.base.config
                             });
+                            insetMap.createInsetView();
                             return [2 /*return*/];
                         });
                     }); });
                     itemUtils_1.findQuery(find, view).then(function () { return itemUtils_1.goToMarker(marker, view); });
                     _this._addMeasureWidgets(view, _this.base.config);
+                    _this._addHome(view, _this.base.config);
+                    _this._addSearch(view, _this.base.config);
+                    _this._createSlideGallery(view, _this.base.config);
                 });
             });
             document.body.classList.remove(CSS.loading);
+        };
+        SceneExample.prototype._addHome = function (view, config) {
+            return __awaiter(this, void 0, void 0, function () {
+                var homeRequire, Home, homeWidget;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!config.home) return [3 /*break*/, 2];
+                            return [4 /*yield*/, requireUtils.when(require, [
+                                    "esri/widgets/Home"
+                                ])];
+                        case 1:
+                            homeRequire = _a.sent();
+                            if (homeRequire && homeRequire.length && homeRequire.length > 0) {
+                                Home = homeRequire[0];
+                                homeWidget = new Home({
+                                    view: view
+                                });
+                                view.ui.add(homeWidget, config.homePosition);
+                            }
+                            _a.label = 2;
+                        case 2: return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        SceneExample.prototype._addSearch = function (view, config) {
+            return __awaiter(this, void 0, void 0, function () {
+                var searchRequire, Search, Expand, searchWidget, expandSearch;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!config.search) return [3 /*break*/, 2];
+                            return [4 /*yield*/, requireUtils.when(require, [
+                                    "esri/widgets/Search",
+                                    "esri/widgets/Expand"
+                                ])];
+                        case 1:
+                            searchRequire = _a.sent();
+                            if (searchRequire && searchRequire.length && searchRequire.length > 1) {
+                                Search = searchRequire[0];
+                                Expand = searchRequire[1];
+                                searchWidget = new Search({
+                                    view: view,
+                                    locationEnabled: true
+                                });
+                                expandSearch = new Expand({
+                                    view: view,
+                                    content: searchWidget
+                                });
+                                if (config.searchExpanded) {
+                                    expandSearch.expand();
+                                }
+                                view.ui.add(expandSearch, config.searchPosition);
+                            }
+                            _a.label = 2;
+                        case 2: return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        SceneExample.prototype._createSlideGallery = function (view, config) {
+            return __awaiter(this, void 0, void 0, function () {
+                var slideRequire, Expand, CustomBookmarks, slideContainer, expand;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!config.slides) return [3 /*break*/, 2];
+                            if (!(view &&
+                                view.map &&
+                                view.map.presentation &&
+                                view.map.presentation.slides &&
+                                view.map.presentation.slides.length > 0)) return [3 /*break*/, 2];
+                            return [4 /*yield*/, requireUtils.when(require, [
+                                    "esri/widgets/Expand",
+                                    "./CustomBookmarks"
+                                ])];
+                        case 1:
+                            slideRequire = _a.sent();
+                            if (slideRequire && slideRequire.length && slideRequire.length > 1) {
+                                Expand = slideRequire[0];
+                                CustomBookmarks = slideRequire[1];
+                                slideContainer = new CustomBookmarks({
+                                    view: view
+                                });
+                                slideContainer.containerTitle = this.base.config.slidesTitle;
+                                expand = new Expand({
+                                    view: view,
+                                    content: slideContainer,
+                                    group: config.slidePosition
+                                });
+                                view.ui.add(expand, config.slidesPosition);
+                            }
+                            _a.label = 2;
+                        case 2: return [2 /*return*/];
+                    }
+                });
+            });
         };
         SceneExample.prototype._addMeasureWidgets = function (view, config) {
             return __awaiter(this, void 0, void 0, function () {
@@ -170,11 +286,14 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                         case 0:
                             if (!config.measurement) return [3 /*break*/, 2];
                             return [4 /*yield*/, requireUtils.when(require, [
-                                    "esri/widgets/DirectLineMeasurement3D", "esri/widgets/AreaMeasurement3D"
+                                    "esri/widgets/DirectLineMeasurement3D",
+                                    "esri/widgets/AreaMeasurement3D"
                                 ])];
                         case 1:
                             measureRequire = _a.sent();
-                            if (measureRequire && measureRequire.length && measureRequire.length > 1) {
+                            if (measureRequire &&
+                                measureRequire.length &&
+                                measureRequire.length > 1) {
                                 DirectLineMeasurement3D_1 = measureRequire[0];
                                 AreaMeasurement3D_1 = measureRequire[1];
                                 nav = document.createElement("nav");
@@ -188,7 +307,7 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                                         measureTool_1.destroy();
                                         view.ui.remove(measureTool_1);
                                     }
-                                    // don't recreate if its the same button 
+                                    // don't recreate if its the same button
                                     if (type_1 && type_1 === button.dataset.type) {
                                         type_1 = null;
                                     }
@@ -207,36 +326,6 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                                         view.ui.add(measureTool_1, config.measurementPosition);
                                     }
                                 });
-                                /* const areaButton = document.createElement("button");
-                                 areaButton.classList.add("esri-widget-button", "btn", "btn-grouped", "esri-icon-polygon");
-                                 areaButton.title = i18n.tools.measureArea;
-                                 areaButton.setAttribute("aria-label", i18n.tools.measureArea);
-                                 areaButton.addEventListener("click", () => {
-                                   if (measureTool) {
-                                     measureTool.destroy();
-                                     view.ui.remove(measureTool);
-                                   }
-                                   measureTool = new AreaMeasurement3D({
-                                     view: view
-                                   });
-                                   view.ui.add(measureTool, config.measurementPosition);
-                                 });
-                                 nav.appendChild(areaButton);
-                                 const lineButton = document.createElement("button");
-                                 lineButton.classList.add("esri-widget-button", "btn", "btn-grouped", "esri-icon-polyline");
-                                 lineButton.title = i18n.tools.measureLine;
-                                 lineButton.setAttribute("aria-label", i18n.tools.measureLine);
-                                 lineButton.addEventListener("click", () => {
-                                   if (measureTool) {
-                                     measureTool.destroy();
-                                     view.ui.remove(measureTool);
-                                   }
-                                   measureTool = new DirectLineMeasurement3D({
-                                     view: view
-                                   });
-                                   view.ui.add(measureTool, config.measurementPosition);
-                                 });
-                                 nav.appendChild(lineButton);*/
                                 view.ui.add(nav, config.measurementPosition);
                             }
                             _a.label = 2;
@@ -250,7 +339,7 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
             var icon = type === "area" ? "esri-icon-polygon" : "esri-icon-polyline";
             var label = type === "area" ? i18n.tools.measureArea : i18n.tools.measureLine;
             button.dataset.type = type;
-            button.classList.add("esri-widget-button", "btn", "btn-grouped", icon);
+            button.classList.add("esri-widget-button", "btn", "btn-white", "btn-grouped", icon);
             button.title = label;
             button.setAttribute("aria-label", label);
             return button;
