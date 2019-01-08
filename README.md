@@ -6,6 +6,64 @@ Scene with inset map is a configurable app template for visualizing web scenes w
 Select optional widgets, including a 3D measure tool
 Choose a color theme, and include a header and title
 Configure an information dialog that can be used as a splash screen to provide context about the map to your audience
+# Configuration Options
+
+## General options
+* **appid**: Application id that contains configured app properties
+
+## View comparision options
+* **webscene**: Web scene for the 3d map area.
+* **webmap**: Optionally specify a Web map for the 2d inset map panel.
+* **useWebMap**: Default value is false. When false the inset map uses the basemap value defined in *insetBasemap*. When true the webmap specified by *webmap* is used.
+* **insetBasemap**: Use this option to modify the basemap displayed in the inset map. By default the basemap for the 3d map is used.
+* **insetExpand**: Add an expand button to each map so users can quickly expand/collapse the inset map to view it full size.
+* **splitDirection**: *horizontal|vertical*  When the *insetExpand* option is enabled this property defines how the 2d map and 3d map are displayed when in expanded mdoe. Horizontal displays maps side by side. Vertical stacks maps.
+* **insetPosition**: Valid values are *top-left|top-right|bottom-left|bottom-right*. The location on the 3d map where the inset map is displayed.The default value is bottom-left.
+* **controlPosition**: Valid values are *top-left|top-right|bottom-left|bottom-right*.  The location on the inset map where the expand button is added. The default value is bottom-right.
+* **locationColor**: The hex color of the arrow that displays on the 2d inset map showing the camera direction. The default value is black.
+
+
+## Title and Toolbar options
+* **title**: Main title for the app
+* **titlelink**: Url if you want the title to be a clickable link that navigates to the specified site.
+* **headerPosition**: *top|bottom* Determines the positioning of the title and toolbar content.
+* **header**: *true|false* When true the header area is hidden and any header tools that have been enabled are added to the app
+
+## Splash or Info panel
+Use these options to add a modal with descriptive info and/or a button with info to the app. The info/splash button is added to the title area of the app unless **header** is false. If header is false the button is added to the top-right corner of the first view.
+* **splash**: Add info button to the app
+* **splashOnStart**: Display the information as a splash screen when the app loads. Once the user closes the splash screen we write a property to session storage so the modal isn't displayed again during that session.  When false the modal doesn't display and the info content is added as a button.
+* **splashDesc**: Content that displays in the description area of the info panel.
+* **splashTitle**: Title for the info panel
+* **splashButtonLabel**: Text that displays on the info panel. The default value is ok.
+
+
+## 3d View Settings
+ * **backgroundColor**: Specify a hex color value for the scene background. When set the atmosphere and stars are turned off so the background of the scene will be drawn in the specified color.
+ * **transparentBackground**: When true the 3d background(starts and atmostphere) is hidden and the **backgroundColor** displays.
+
+
+## Theme
+* **bodyBackground**: Default value is empty. If a shared theme is set in the organization the body.background color will be used. Users can specify a color via the configuration process. This color will be used for the splash and description panel background color.
+* **bodyColor**: Default value is empty. If a shared theme is set in the organization the body.text color will be used. Users can specify a color via the configuration process. This color will be used for the splash and description panel text color.
+* **headerBackground**: Default value is white (#fff). If a shared theme is set in the organization the header.background color will be used. Users can specify a color via the configuration process. This color will be used for the header/footer background color.
+* **headerColor**: Default value is dark gray (#4c4c4c). If a shared theme is set in the organization the header.text color will be used. Users can specify a color via the configuration process. This color will be used for the header/footer text color and the color of any tools that are displayed in the header/footer area.
+* **buttonBackground**: Default value is empty. If a shared theme is set in the organization the button.background color will be used. Users can specify a color via the configuration process. This color will be used for the splash screen button background color. Note: This value is not applied to map buttons.
+* **buttonColor**: Default value is empty. If a shared theme is set in the organization the button.text color will be used. Users can specify a color via the configuration process. This color will be used for the splash screen button text color. Note: this value is not applied to map buttons.
+
+## Tools
+* **search**: Default value is false.  If the maps are sync'd and the header is displayed we'll just add one search widget to the header area that will allow searching of both maps. If maps are not sync'd then we'll add a search widget to each map.
+* **searchConfig**: Allow users to configure search sources for the app
+* **searchPosition**: Location on the map where the search button is displayed. Only applies if its not in the header. Valid values are *top-left|top-center|top-right|bottom-left|bottom-center|bottom-right*
+* **slides**: Default value is false. When true displays  slides for the 3d map. If no slides  are present in the map then the tool isn't added to the map.
+* **slidesPosition**: Location on the  map where the bookmark or slide tool is placed. Valid values are *top-left|top-center|top-right|bottom-left|bottom-center|bottom-right*
+* **slidesTitle**: Optional text that is displayed at the top of the slide container. Default value is slides.
+* **home**: Default value is false. When true a home button is added to the maps.
+* **homePosition**: Location on the map where the home tool is placed.  Valid values are *top-left|top-center|top-right|bottom-left|bottom-center|bottom-right*
+* **measurement**: Default value is false. When true the measure button is added to the map.
+* **measurementPosition**:Location on the map where the measure tool is placed.  Valid values are *top-left|top-center|top-right|bottom-left|bottom-center|bottom-right*
+* **measurementOptions**: Valid values are *both|line|area*. Allows users to display just the line and area tools or add both.
+
 
 ## Use Cases
 Present detailed 3D view of a mountainous region at a large scale and let the 2D map to provide an overview of where you are in the world
@@ -30,7 +88,7 @@ This application has no data requirements.
 ## Deploying
 
 1. To deploy this application, download the template from Portal/ArcGIS Online and unzip it.
-2. Install npm and run npm install via command line then run npm run start. 
+2. Install npm and run npm install via command line then run npm run start.
 3. Copy the unzipped folder containing the web app template files, such as index.html, to your web server. You can rename the folder to change the URL through which users will access the application. By default the URL to the app will be `http://<Your Web Server>/<app folder name>/app/index.html`
 4. Change the sharing host, found in defaults.js inside the config folder for the application, to the sharing URL for ArcGIS Online or Portal. For ArcGIS Online users, keep the default value of www.arcgis.com or specify the name of your organization.
   - ArcGIS Online Example:  `"sharinghost": location.protocol + "//" + “<your organization name>.maps.arcgis.com`

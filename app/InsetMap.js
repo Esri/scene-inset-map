@@ -1,7 +1,10 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -57,14 +60,15 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
     var scale = 4;
     var width = 250;
     var height = 250;
+    //esriConfig.fontsUrl = "https://staticdev.arcgis.com/fonts";
     var defaultDirectionSymbol = {
         type: "text",
         color: "#333",
-        text: "\ue688",
+        text: "\ue666",
         angle: 0,
         font: {
             size: 18,
-            family: "CalciteWebCoreIcons"
+            family: "calcite-web-icons"
         }
     };
     var InsetMap = /** @class */ (function (_super) {
@@ -82,12 +86,12 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
         }
         InsetMap.prototype.createInsetView = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var insetDiv, mapProps, map, inset, _a;
+                var container, mapProps, map, inset, _a;
                 var _this = this;
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
-                            insetDiv = document.getElementById("mapInset");
+                            container = document.getElementById("mapInset");
                             mapProps = {};
                             if (this.mapId && this.config.useWebMap) {
                                 mapProps.portalItem = { id: this.mapId };
@@ -104,7 +108,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 map: map,
                                 extent: this.mainView.extent,
                                 scale: this.mainView.scale * scale * Math.max(this.mainView.width / width, this.mainView.height / height),
-                                container: insetDiv,
+                                container: container,
                                 constraints: {
                                     snapToZoom: false,
                                     rotationEnabled: false
@@ -126,7 +130,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                                 var index = _this.insetView.layerViews.length > 0 ? _this.insetView.layerViews.length : 0;
                                 _this.insetView.map.reorder(_this.graphicsLayer, index);
                             });
-                            insetDiv.classList.remove("hide");
+                            container.classList.remove("hide");
                             this._setupSync();
                             return [2 /*return*/];
                     }
@@ -152,7 +156,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 gutterSize: 20
             };
             if (this.config.splitDirection === "vertical") {
-                // stack maps on top of each other 
+                // stack maps on top of each other
                 splitterOptions.direction = "vertical";
             }
             else {
@@ -160,19 +164,19 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
             }
             expandButton.addEventListener("click", function () {
                 if (expandButton.classList.contains(expandOpen)) {
-                    // Inset so move to full 
+                    // Inset so move to full
                     _this.mainView.ui.remove(_this.insetView.container);
                     viewContainerNode.appendChild(_this.insetView.container);
                     splitter = splitMaps_1.default(["#mapMain", "#mapInset"], splitterOptions);
                     expandButton.title = i18n.tools.collapse;
                 }
                 else {
-                    // Full move to inset  
+                    // Full move to inset
                     if (splitter) {
                         splitter.destroy();
                     }
                     _this.mainView.ui.add(_this.insetView.container, _this.config.insetPosition);
-                    // expand inset a bit 
+                    // expand inset a bit
                     _this.insetView.extent.expand(0.5);
                     expandButton.title = i18n.tools.expand;
                 }
@@ -228,7 +232,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     });
                     _this.mover.on("graphic-move-stop", function (e) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            this._pauseAndUpdate(this.insetView.toMap(e.screenPoint), false);
+                            this._pauseAndUpdate(e.graphic.geometry, false);
                             return [2 /*return*/];
                         });
                     }); });
@@ -285,7 +289,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                 symbol: defaultDirectionSymbol
             });
             this.graphicsLayer.add(g);
-            // Pan to graphic if it moves out of inset view 
+            // Pan to graphic if it moves out of inset view
             watchUtils.whenFalseOnce(this.mainView, "interacting", function () {
                 _this._panInsetView(position, false);
             });
@@ -297,8 +301,7 @@ define(["require", "exports", "esri/core/tsSupport/declareExtendsHelper", "esri/
                     return heading;
                 }
                 var offset = heading + orientation_1;
-                var adjustment = offset > 360 ? offset - 360 : offset < 0 ? offset + 360 : offset;
-                return adjustment;
+                return offset > 360 ? offset - 360 : offset < 0 ? offset + 360 : offset;
             }
             return heading;
         };

@@ -1,10 +1,15 @@
 define({
   "error": "Greška",
+  "licenseError": {
+    "message": "Vaš nalog nema licencu za korišćenje aplikacija koje mogu da se konfigurišu i nisu javne. Zatražite od administratora organizacije da vam dodeli onaj tip korisnika koji uključuje osnovne aplikacije ili licencu za dodatne osnovne aplikacije.",
+    "title": "Nema licencu"
+  },
   "tools": {
     "bookmarks": {
       "label": "Slajdovi",
       "goToBookmark": "Idi na"
     },
+    "search": "Pretraži",
     "about": "Osnovni podaci",
     "resize": "Promeni veličinu",
     "expand": "Proširi mapu",

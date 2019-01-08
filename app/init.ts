@@ -26,10 +26,19 @@ import applicationConfig = require("dojo/text!config/application.json");
 import ApplicationBase = require("ApplicationBase/ApplicationBase");
 
 import Application = require("./Main");
-
+import i18n = require("dojo/i18n!./nls/resources");
 const Main = new Application();
-
 new ApplicationBase({
   config: applicationConfig,
   settings: applicationBaseConfig
-}).load().then(base => Main.init(base));
+})
+  .load()
+  .then(base => Main.init(base), (message) => {
+    if (message === "identity-manager:not-authorized") {
+      document.body.classList.remove("configurable-application--loading");
+      const viewContainer = document.getElementById("viewContainer");
+
+      viewContainer.classList.add("app-error");
+      viewContainer.innerHTML = `<h1>${i18n.licenseError.title}</h1><p>${i18n.licenseError.message}</p>`;
+    }
+  });

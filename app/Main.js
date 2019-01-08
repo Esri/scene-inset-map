@@ -19,13 +19,16 @@
 
   limitations under the License.​
 */
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -78,6 +81,7 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
             //  ApplicationBase
             //----------------------------------
             this.base = null;
+            this.header = null;
         }
         //--------------------------------------------------------------------------
         //
@@ -90,6 +94,7 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                 console.error("ApplicationBase is not defined");
                 return;
             }
+            this._applySharedTheme(base);
             domHelper_1.setPageLocale(base.locale);
             domHelper_1.setPageDirection(base.direction);
             this.base = base;
@@ -105,39 +110,21 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                 return;
             }
             config.title = !config.title ? itemUtils_1.getItemTitle(firstItem) : config.title;
-            domHelper_1.setPageTitle(config.title);
-            if (config.titlelink) {
-                config.title = "<a href=\"" + config.titlelink + "\" >" + config.title + "</a>";
-            }
-            document.getElementById("title").innerHTML = config.title;
-            var portalItem = this.base.results.applicationItem.value;
-            var appProxies = portalItem && portalItem.applicationProxies
-                ? portalItem.applicationProxies
-                : null;
-            // Setup splash screen if enabled
-            if (this.base.config.splash) {
-                calcite.init();
-                var splashButton = document.getElementById("splashButton");
-                splashButton.classList.remove("hide");
-                splashButton.innerHTML = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" class=\"svg-icon\">\n                <path d=\"M31.297 16.047c0 8.428-6.826 15.25-15.25 15.25S.797 24.475.797 16.047c0-8.424 6.826-15.25 15.25-15.25s15.25 6.826 15.25 15.25zM18 24V12h-4v12h-2v2h8v-2h-2zm0-18h-4v4h4V6z\"\n                />\n              </svg>" + i18n.tools.about;
-                document.getElementById("splashContent").innerHTML = this.base.config.splashDesc;
-                document.getElementById("splashTitle").innerHTML = this.base.config.splashTitle;
-                document.getElementById("splashOkButton").innerHTML = this.base.config.splashButtonLabel;
-                if (this.base.config.splashOnStart) {
-                    // enable splash screen when app loads then
-                    // set info in session storage when its closed
-                    // so we don't open again this session.
-                    if (!sessionStorage.getItem("disableSplash")) {
-                        calcite.bus.emit("modal:open", { id: "splash" });
-                    }
-                    sessionStorage.setItem("disableSplash", "true");
-                }
-            }
             var viewContainerNode = document.getElementById("viewContainer");
             if (this.base.config.splitDirection === "vertical") {
                 // vertical is maps stacked vertically. Horizontal is side by side
                 viewContainerNode.classList.add("direction-vertical");
             }
+            domHelper_1.setPageTitle(config.title);
+            if (config.embed && config.embed === true) { // Hide header if embed property is true
+            }
+            else if (config.header) {
+                this._addHeader(viewContainerNode, config);
+            }
+            var portalItem = this.base.results.applicationItem.value;
+            var appProxies = portalItem && portalItem.applicationProxies
+                ? portalItem.applicationProxies
+                : null;
             var defaultViewProperties = itemUtils_1.getConfigViewProperties(config);
             var item = firstItem;
             var contDiv = document.createElement("div");
@@ -163,6 +150,7 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                         var insetMap;
                         return __generator(this, function (_a) {
                             this.base.config.appProxies = appProxies;
+                            this._addSplash(view, this.base.config);
                             insetMap = new InsetMap_1.default({
                                 mainView: view,
                                 config: this.base.config
@@ -176,29 +164,135 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                     _this._addHome(view, _this.base.config);
                     _this._addSearch(view, _this.base.config);
                     _this._createSlideGallery(view, _this.base.config);
+                    if (_this.base.config.splash && _this.base.config.embed) {
+                        // move splash button to ui
+                        var splash = document.getElementById("splashButton");
+                        view.ui.add(splash, "top-right");
+                    }
                 });
             });
             document.body.classList.remove(CSS.loading);
         };
+        SceneExample.prototype._applySharedTheme = function (base) {
+            var portal = base.portal, config = base.config;
+            /* if (portal && portal.portalProperties && portal.portalProperties.sharedTheme) {
+               const theme = portal.portalProperties.sharedTheme;
+               if (theme.body) {
+                 //.app-body
+                 // background,text, link
+                 if (theme.body.background) {
+                   config.bodyBackground = theme.body.background;
+                 }
+                 if (theme.body.text) {
+                   config.bodyColor = theme.body.text;
+                 }
+               }
+               if (theme.header) {
+                 //.app-header
+                 //background, text
+                 if (theme.header.background) {
+                   config.headerBackground = theme.header.background;
+                 }
+                 if (theme.header.text) {
+                   config.headerColor = theme.header.text;
+                 }
+               }
+               if (theme.button) {
+                 //background text
+                 //esri-widget--button
+                 if (theme.button.background) {
+                   config.buttonBackground = theme.button.background;
+                 }
+                 if (theme.button.text) {
+                   config.buttonColor = theme.button.text;
+                 }
+               }
+               if (theme.logo) {
+                 //small
+               }
+             }*/
+            // Build and insert style
+            var styles = [];
+            styles.push(config.bodyBackground ? ".app-body{background:" + config.bodyBackground + ";}" : null);
+            styles.push(config.bodyColor ? ".app-body{color:" + config.bodyColor + ";}" : null);
+            styles.push(config.headerBackground ? ".app-header{background:" + config.headerBackground + ";}" : null);
+            styles.push(config.headerColor ? ".app-header{color:" + config.headerColor + ";}.toolbar-buttons{color:" + config.headerColor + "}" : null);
+            styles.push(config.buttonBackground ? ".app-button{background:" + config.buttonBackground + ";}" : null);
+            styles.push(config.buttonColor ? ".app-button{color:" + config.buttonColor + ";}" : null);
+            var style = document.createElement("style");
+            style.appendChild(document.createTextNode(styles.join("")));
+            document.getElementsByTagName("head")[0].appendChild(style);
+        };
+        SceneExample.prototype._addHeader = function (viewContainerNode, config) {
+            return __awaiter(this, void 0, void 0, function () {
+                var Header, headerContainer;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, new Promise(function (resolve_1, reject_1) { require(["./components/Header"], resolve_1, reject_1); })];
+                        case 1:
+                            Header = _a.sent();
+                            if (Header !== null) {
+                                this.header = new Header.default({
+                                    config: config,
+                                    container: document.createElement("div")
+                                });
+                                headerContainer = this.header.container;
+                                config.headerPosition === "top" ? document.body.insertBefore(headerContainer, viewContainerNode) : document.body.appendChild(headerContainer);
+                            }
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        SceneExample.prototype._addSplash = function (view, config) {
+            return __awaiter(this, void 0, void 0, function () {
+                var Splash, splash, splashToggle, toolbar_1;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!config.splash) return [3 /*break*/, 2];
+                            return [4 /*yield*/, new Promise(function (resolve_2, reject_2) { require(["./components/Splash"], resolve_2, reject_2); })];
+                        case 1:
+                            Splash = _a.sent();
+                            if (Splash !== null) {
+                                splash = new Splash.default({
+                                    config: config,
+                                    container: document.createElement("div")
+                                });
+                                document.body.appendChild(splash.container);
+                                splashToggle = splash.createToolbarButton();
+                                if (!config.header) {
+                                    view.ui.add(splashToggle, "top-right");
+                                }
+                                else {
+                                    toolbar_1 = this.header && this.header.getToolbar();
+                                    if (toolbar_1) {
+                                        toolbar_1.appendChild(splashToggle);
+                                    }
+                                }
+                                splash.showSplash();
+                            }
+                            _a.label = 2;
+                        case 2: return [2 /*return*/];
+                    }
+                });
+            });
+        };
         SceneExample.prototype._addHome = function (view, config) {
             return __awaiter(this, void 0, void 0, function () {
-                var homeRequire, Home, homeWidget;
+                var Home;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             if (!config.home) return [3 /*break*/, 2];
-                            return [4 /*yield*/, requireUtils.when(require, [
-                                    "esri/widgets/Home"
-                                ])];
+                            return [4 /*yield*/, requireUtils.when(require, ["esri/widgets/Home"])];
                         case 1:
-                            homeRequire = _a.sent();
-                            if (homeRequire && homeRequire.length && homeRequire.length > 0) {
-                                Home = homeRequire[0];
-                                homeWidget = new Home({
-                                    view: view
-                                });
-                                view.ui.add(homeWidget, config.homePosition);
+                            Home = (_a.sent())[0];
+                            if (!Home) {
+                                return [2 /*return*/];
                             }
+                            ;
+                            view.ui.add(new Home({ view: view }), config.homePosition);
                             _a.label = 2;
                         case 2: return [2 /*return*/];
                     }
@@ -207,34 +301,57 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
         };
         SceneExample.prototype._addSearch = function (view, config) {
             return __awaiter(this, void 0, void 0, function () {
-                var searchRequire, Search, Expand, searchWidget, expandSearch;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
+                var _a, Search, Expand, FeatureLayer_1, searchProperties, sources, content, expandSearch;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
                         case 0:
                             if (!config.search) return [3 /*break*/, 2];
                             return [4 /*yield*/, requireUtils.when(require, [
                                     "esri/widgets/Search",
-                                    "esri/widgets/Expand"
+                                    "esri/widgets/Expand",
+                                    "esri/layers/FeatureLayer"
                                 ])];
                         case 1:
-                            searchRequire = _a.sent();
-                            if (searchRequire && searchRequire.length && searchRequire.length > 1) {
-                                Search = searchRequire[0];
-                                Expand = searchRequire[1];
-                                searchWidget = new Search({
-                                    view: view,
-                                    locationEnabled: true
-                                });
-                                expandSearch = new Expand({
-                                    view: view,
-                                    content: searchWidget
-                                });
-                                if (config.searchExpanded) {
-                                    expandSearch.expand();
-                                }
-                                view.ui.add(expandSearch, config.searchPosition);
+                            _a = _b.sent(), Search = _a[0], Expand = _a[1], FeatureLayer_1 = _a[2];
+                            if (!Search && !Expand && !FeatureLayer_1) {
+                                return [2 /*return*/];
                             }
-                            _a.label = 2;
+                            searchProperties = {
+                                view: view,
+                                locationEnabled: true
+                            };
+                            // Get any configured search settings
+                            if (config.searchConfig) {
+                                if (config.searchConfig.sources) {
+                                    sources = config.searchConfig.sources;
+                                    searchProperties.sources = sources.filter(function (source) {
+                                        if (source.flayerId && source.url) {
+                                            var layer = view.map.findLayerById(source.flayerId);
+                                            source.featureLayer = layer ? layer : new FeatureLayer_1(source.url);
+                                        }
+                                        return source;
+                                    });
+                                }
+                                if (searchProperties.sources && searchProperties.sources.length && searchProperties.sources.length > 0) {
+                                    searchProperties.includeDefaultSources = false;
+                                }
+                                searchProperties.searchAllEnabled = this.base.config.searchConfig.enableSearchingAll || true;
+                                if (this.base.config.searchConfig.activeSourceIndex && searchProperties.sources && searchProperties.sources.length >= this.base.config.searchConfig.activeSourceIndex) {
+                                    searchProperties.activeSourceIndex = this.base.config.searchConfig.activeSourceIndex;
+                                }
+                            }
+                            content = new Search(searchProperties);
+                            expandSearch = new Expand({
+                                view: view,
+                                expandTooltip: i18n.tools.search,
+                                group: config.searchPosition,
+                                content: content
+                            });
+                            if (config.searchExpanded) {
+                                expandSearch.expand();
+                            }
+                            view.ui.add(expandSearch, config.searchPosition);
+                            _b.label = 2;
                         case 2: return [2 /*return*/];
                     }
                 });
@@ -242,9 +359,9 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
         };
         SceneExample.prototype._createSlideGallery = function (view, config) {
             return __awaiter(this, void 0, void 0, function () {
-                var slideRequire, Expand, CustomBookmarks, slideContainer, expand;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
+                var _a, Expand, CustomBookmarks, expand;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
                         case 0:
                             if (!config.slides) return [3 /*break*/, 2];
                             if (!(view &&
@@ -254,25 +371,24 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
                                 view.map.presentation.slides.length > 0)) return [3 /*break*/, 2];
                             return [4 /*yield*/, requireUtils.when(require, [
                                     "esri/widgets/Expand",
-                                    "./CustomBookmarks"
+                                    "./components/CustomBookmarks"
                                 ])];
                         case 1:
-                            slideRequire = _a.sent();
-                            if (slideRequire && slideRequire.length && slideRequire.length > 1) {
-                                Expand = slideRequire[0];
-                                CustomBookmarks = slideRequire[1];
-                                slideContainer = new CustomBookmarks({
-                                    view: view
-                                });
-                                slideContainer.containerTitle = this.base.config.slidesTitle;
-                                expand = new Expand({
-                                    view: view,
-                                    content: slideContainer,
-                                    group: config.slidePosition
-                                });
-                                view.ui.add(expand, config.slidesPosition);
+                            _a = _b.sent(), Expand = _a[0], CustomBookmarks = _a[1];
+                            if (!Expand && !CustomBookmarks) {
+                                return [2 /*return*/];
                             }
-                            _a.label = 2;
+                            expand = new Expand({
+                                view: view,
+                                expandTooltip: i18n.tools.bookmarks.label,
+                                content: new CustomBookmarks({
+                                    view: view,
+                                    containerTitle: this.base.config.slidesTitle
+                                }),
+                                group: config.slidePosition
+                            });
+                            view.ui.add(expand, config.slidesPosition);
+                            _b.label = 2;
                         case 2: return [2 /*return*/];
                     }
                 });
@@ -280,66 +396,89 @@ define(["require", "exports", "dojo/i18n!./nls/resources", "./InsetMap", "esri/c
         };
         SceneExample.prototype._addMeasureWidgets = function (view, config) {
             return __awaiter(this, void 0, void 0, function () {
-                var measureRequire, DirectLineMeasurement3D_1, AreaMeasurement3D_1, nav, measureTool_1, type_1;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
+                var _a, DirectLineMeasurement3D_1, AreaMeasurement3D_1, Slice_1, nav_1, buttons_1, measureTool_1;
+                var _this = this;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
                         case 0:
                             if (!config.measurement) return [3 /*break*/, 2];
                             return [4 /*yield*/, requireUtils.when(require, [
                                     "esri/widgets/DirectLineMeasurement3D",
-                                    "esri/widgets/AreaMeasurement3D"
+                                    "esri/widgets/AreaMeasurement3D",
+                                    "esri/widgets/Slice"
                                 ])];
                         case 1:
-                            measureRequire = _a.sent();
-                            if (measureRequire &&
-                                measureRequire.length &&
-                                measureRequire.length > 1) {
-                                DirectLineMeasurement3D_1 = measureRequire[0];
-                                AreaMeasurement3D_1 = measureRequire[1];
-                                nav = document.createElement("nav");
-                                nav.classList.add("leader-1");
-                                measureTool_1 = null;
-                                nav.appendChild(this._createMeasureButton("area"));
-                                nav.appendChild(this._createMeasureButton("line"));
-                                nav.addEventListener("click", function (e) {
-                                    var button = e.target;
-                                    if (measureTool_1) {
-                                        measureTool_1.destroy();
-                                        view.ui.remove(measureTool_1);
-                                    }
-                                    // don't recreate if its the same button
-                                    if (type_1 && type_1 === button.dataset.type) {
-                                        type_1 = null;
-                                    }
-                                    else {
-                                        type_1 = button.dataset.type;
-                                        if (type_1 === "area") {
-                                            measureTool_1 = new AreaMeasurement3D_1({
-                                                view: view
-                                            });
-                                        }
-                                        else {
-                                            measureTool_1 = new DirectLineMeasurement3D_1({
-                                                view: view
-                                            });
-                                        }
-                                        view.ui.add(measureTool_1, config.measurementPosition);
-                                    }
-                                });
-                                view.ui.add(nav, config.measurementPosition);
+                            _a = _b.sent(), DirectLineMeasurement3D_1 = _a[0], AreaMeasurement3D_1 = _a[1], Slice_1 = _a[2];
+                            nav_1 = document.createElement("nav");
+                            nav_1.classList.add("leader-1");
+                            buttons_1 = [];
+                            measureTool_1 = null;
+                            if (config.measurementOptions === "area" || config.measurementOptions === "both") {
+                                buttons_1.push(this._createMeasureButton("area"));
                             }
-                            _a.label = 2;
+                            if (config.measurementOptions === "line" || config.measurementOptions === "both") {
+                                buttons_1.push(this._createMeasureButton("line"));
+                            }
+                            if (config.slice) {
+                                buttons_1.push(this._createMeasureButton("slice"));
+                            }
+                            buttons_1.forEach(function (button) { return nav_1.appendChild(button); });
+                            nav_1.addEventListener("click", function (e) {
+                                var activeButton = e.target;
+                                var isActive = activeButton.classList.contains("active");
+                                // Deactivate all buttons
+                                buttons_1.forEach(function (button) { return button.classList.remove("active"); });
+                                _this._destroyMeasureButton(view, measureTool_1);
+                                if (!isActive) {
+                                    var buttonType = activeButton.dataset.type;
+                                    activeButton.classList.add("active");
+                                    if (buttonType === "area") {
+                                        measureTool_1 = new AreaMeasurement3D_1({ view: view });
+                                        measureTool_1.viewModel.newMeasurement();
+                                    }
+                                    else if (buttonType === "line") {
+                                        measureTool_1 = new DirectLineMeasurement3D_1({ view: view });
+                                        measureTool_1.viewModel.newMeasurement();
+                                    }
+                                    else if (buttonType === "slice") {
+                                        measureTool_1 = new Slice_1({ view: view });
+                                    }
+                                    view.ui.add(measureTool_1, config.measurementPosition);
+                                }
+                            });
+                            view.ui.add(nav_1, config.measurementPosition);
+                            _b.label = 2;
                         case 2: return [2 /*return*/];
                     }
                 });
             });
         };
+        SceneExample.prototype._destroyMeasureButton = function (view, tool) {
+            if (!tool) {
+                return;
+            }
+            view.ui.remove(tool);
+            tool.destroy();
+            tool = null;
+        };
         SceneExample.prototype._createMeasureButton = function (type) {
+            var _a;
             var button = document.createElement("button");
-            var icon = type === "area" ? "esri-icon-polygon" : "esri-icon-polyline";
-            var label = type === "area" ? i18n.tools.measureArea : i18n.tools.measureLine;
+            var icon, label;
+            if (type === "area") {
+                icon = "esri-icon-polygon";
+                label = i18n.tools.measureArea;
+            }
+            else if (type === "line") {
+                icon = "esri-icon-minus";
+                label = i18n.tools.measureLine;
+            }
+            else if (type === "slice") {
+                icon = "esri-icon-hollow-eye";
+                label = "Slice"; // hard-code name for testing
+            }
             button.dataset.type = type;
-            button.classList.add("esri-widget-button", "btn", "btn-white", "btn-grouped", icon);
+            (_a = button.classList).add.apply(_a, ["esri-widget--button", "esri-widget", "btn", "btn-white", "btn-grouped", icon]);
             button.title = label;
             button.setAttribute("aria-label", label);
             return button;

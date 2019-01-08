@@ -1,138 +1,282 @@
+@import "bookmarks";
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hide {
+  display: none;
+}
+
+.direction-vertical {
+  flex-direction: column;
+}
+
+.column-24 {
+  max-width: 100vw;
+  width: 100vw;
+}
+
+.gutter {
+  background-color: rgba(235, 235, 235, 0.8);
+  color: #656565;
+  font-family: "calcite-web-icons";
+  font-size: 15px;
+  font-weight: bolder;
+}
+
+.gutter:active,
+.gutter:focus {
+  background-color: #656565;
+  color: rgba(235, 235, 235, 0.8);
+}
+
+.gutter.gutter-horizontal {
+  cursor: ew-resize;
+}
+
+.gutter.gutter-horizontal:before,
+.gutter.gutter-vertical:before {
+  position: absolute;
+  top: 50%;
+}
+
+.gutter.gutter-vertical {
+  width: 100%;
+  cursor: ns-resize;
+}
+
+.split.split-horizontal,
+.gutter.gutter-horizontal {
+  height: 100%;
+}
+
+.configurable-application__view-container {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+}
+
+.esri-view {
+  width: 100%;
+  height: 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #fff;
+  background-image: url(../assets/loader-ie9.gif);
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+}
+
+.configurable-application--loading {
+  text-align: center;
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: #fff;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-image: url(../assets/loader-ie9.gif);
+}
+
+.configurable-application--loading .configurable-application__view-container {
+  display: none;
+}
+
+.app-error {
+  background-position: top center;
+  position: absolute;
+  z-index: 2;
+  top: 40%;
+  left: 0;
+  text-align: center;
+}
+
+.app-error {
+  display: block;
+}
+
+.toolbar-buttons {
+  align-items: center;
+  text-align: center;
+}
+
+.esri-view .inset-map {
+  border: solid 2px #fff;
+  background: #fff;
+  -webkit-box-shadow: 1px 1px 5px 1px rgba(255, 255, 255, 0.65);
+  -moz-box-shadow: 1px 1px 5px 1px rgba(255, 255, 255, 0.65);
+  box-shadow: 1px 1px 5px 1px rgba(255, 255, 255, 0.65);
+  width: 250px;
+  height: 250px;
+  cursor: pointer;
+}
+
+.grid-container {
+  margin-left: 1em !important;
+}
+
+// variables
+$border: 1px solid rgba(185, 182, 182, 0.4);
+$margin: 5px;
+$background_color: #fff;
+
 .app-bookmarks-title {
   padding: 1em;
   font-size: 14px;
-  color: orange;
 }
 
 .app-bookmarks {
   min-width: 250px;
   max-width: 350px;
-  background-color: #fff;
-  border: 1px solid rgba(185, 182, 182, 0.4);
+  background-color: $background_color;
+  border: $border;
   line-height: 16px;
-  font-size: 14px;
-}
+  font-size: 14px; // nesting
 
-.app-bookmarks__loading {
-  padding: 40px;
-  text-align: center;
-}
-
-.app-bookmarks__list {
-  display: block;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.app-bookmarks__item {
-  padding: 8px 12px;
-  border-top: 1px solid rgba(185, 182, 182, 0.4);
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
-  align-items: center;
-}
-
-.app-bookmarks__item:hover {
-  background-color: #e6e6e6;
-}
-
-.app-bookmarks__item:first-child {
-  border-top: none;
-}
-
-.app-bookmarks__item-icon {
-  margin-right: 5px;
-}
-
-.app-bookmarks__item-name {
-  flex: 1;
-}
-
-.app-bookmarks__item--active,
-.app-bookmarks__item--active:hover,
-.app-bookmarks__item--active:focus {
-  color: #333333;
-  background-color: #fff;
-  cursor: default;
-}
-
-.app-bookmarks__item--active:after {
-  content: "";
-  position: absolute;
-  height: 2px;
-  top: 0;
-  background-color: #404040;
-  width: 100%;
-  z-index: 2;
-  animation: looping-progresss-bar-ani 1500ms linear infinite;
-}
-
-.app-bookmarks--fade-in {
-  opacity: 0;
-  transition: opacity 375ms ease-out;
-}
-
-.app-bookmarks--fade-in-active {
-  opacity: 1;
-}
-
-@keyframes looping-progresss-bar-ani {
-  0% {
-    left: 0%;
-    width: 0%;
+  // reuse parent selector
+  // .app-bookmarks__loading
+  &__loading {
+    padding: 40px;
+    text-align: center;
   }
 
-  20% {
-    left: 0%;
-    width: 20%;
+  &__list {
+    display: block;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
-  80% {
-    left: 80%;
-    width: 20%;
+  &__item {
+    padding: 8px 12px;
+    border-top: $border;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+
+    &:hover {
+      // function (color)
+      background-color: darken($background-color, 10%);
+    }
+
+    &:first-child {
+      border-top: none;
+    }
+
+    &-icon {
+      margin-right: $margin;
+    }
+
+    &-name {
+      flex: 1;
+    }
+
+    &--active,
+    &--active:hover,
+    &--active:focus {
+      // function (color)
+      color: darken($background-color, 80%);
+      background-color: $background-color;
+      cursor: default;
+    }
+
+    &--active:after {
+      content: "";
+      position: absolute;
+      height: 2px;
+      top: 0;
+      background-color: darken($background-color, 75%);
+      width: 100%;
+      z-index: 2;
+      animation: looping-progresss-bar-ani 1500ms linear infinite
+    }
   }
 
-  100% {
-    left: 100%;
-    width: 0%;
-  }
-}
-
-html[dir="rtl"] .app-bookmarks__item--active:after {
-  animation: looping-progresss-bar-ani-rtl 1500ms linear infinite;
-}
-
-html[dir="rtl"] .app-bookmarks__item-icon {
-  margin-right: 0;
-  margin-left: 5px;
-}
-
-@keyframes looping-progresss-bar-ani-rtl {
-  0% {
-    right: 0%;
-    width: 0%;
+  &--fade-in {
+    opacity: 0;
+    transition: opacity 375ms ease-out;
   }
 
-  20% {
-    right: 0%;
-    width: 20%;
+  &--fade-in-active {
+    opacity: 1;
   }
 
-  80% {
-    right: 80%;
-    width: 20%;
-  }
+  @keyframes looping-progresss-bar-ani {
+    0% {
+      left: 0%;
+      width: 0%
+    }
 
-  100% {
-    right: 100%;
-    width: 0%;
+    20% {
+      left: 0%;
+      width: 20%
+    }
+
+    80% {
+      left: 80%;
+      width: 20%
+    }
+
+    100% {
+      left: 100%;
+      width: 0%
+    }
   }
 }
 
-.grid-container {
-  margin-left: 1em !important;
+html[dir="rtl"] .app-bookmarks {
+  &__item {
+    &--active:after {
+      animation: looping-progresss-bar-ani-rtl 1500ms linear infinite
+    }
+
+    &-icon {
+      margin-right: 0;
+      margin-left: $margin;
+    }
+  }
+
+  @keyframes looping-progresss-bar-ani-rtl {
+    0% {
+      right: 0%;
+      width: 0%
+    }
+
+    20% {
+      right: 0%;
+      width: 20%
+    }
+
+    80% {
+      right: 80%;
+      width: 20%
+    }
+
+    100% {
+      right: 100%;
+      width: 0%
+    }
+  }
+}
+
+.active {
+  background: #e2f1fb;
+  border: solid 1px #e2f1fb;
 }

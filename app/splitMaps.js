@@ -48,11 +48,14 @@ define(["require", "exports"], function (require, exports) {
     };
     // Default options
     var defaultGutterFn = function (i, gutterDirection) {
+        var _a;
         var gut = document.createElement('div');
         gut.setAttribute("role", "separator");
         gut.setAttribute("tabIndex", "0");
         gut.setAttribute("aria-orientation", gutterDirection);
         gut.className = "gutter gutter-" + gutterDirection;
+        var iconClass = gutterDirection === "vertical" ? "esri-icon-handle-horizontal" : "esri-icon-handle-vertical";
+        (_a = gut.classList).add.apply(_a, [iconClass]);
         return gut;
     };
     var defaultElementStyleFn = function (dim, size, gutSize) {
@@ -175,7 +178,6 @@ define(["require", "exports"], function (require, exports) {
         // Both sizes are calculated from the initial parent percentage,
         // then the gutter size is subtracted.
         function adjust(offset) {
-            console.log("Adjust", offset);
             var a = elements[this.a];
             var b = elements[this.b];
             var percentage = a.size + b.size;
@@ -183,7 +185,6 @@ define(["require", "exports"], function (require, exports) {
             b.size = (percentage - ((offset / this.size) * percentage));
             setElementSize(a.element, a.size, this.aGutterSize);
             setElementSize(b.element, b.size, this.bGutterSize);
-            console.log("SIZES after adjust", a.size, b.size);
         }
         // drag, where all the magic happens. The logic is really quite simple:
         //
@@ -287,7 +288,7 @@ define(["require", "exports"], function (require, exports) {
             document.body.style.cursor = '';
         }
         function keyboardNav(key) {
-            // TODO add keyboard nav for horiz left/right arrows 
+            // TODO add keyboard nav for horiz left/right arrows
             var rect = this.gutter.getBoundingClientRect();
             calculateSizes.call(this);
             if (this.direction === "vertical") {
@@ -306,12 +307,10 @@ define(["require", "exports"], function (require, exports) {
             else {
                 if (key.code === "ArrowRight") {
                     this.dragging = true;
-                    console.log("right");
                     drag.call(this, { clientAxis: rect.top });
                 }
                 else if (key.code === "ArrowLeft") {
                     this.dragging = true;
-                    console.log("left");
                     drag.call(this, { clientAxis: rect.top });
                 }
                 else {

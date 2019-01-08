@@ -57,6 +57,7 @@ class SceneExample {
   //  ApplicationBase
   //----------------------------------
   base: ApplicationBase = null;
+  header = null;
 
   //--------------------------------------------------------------------------
   //
@@ -69,7 +70,7 @@ class SceneExample {
       console.error("ApplicationBase is not defined");
       return;
     }
-
+    this._applySharedTheme(base);
     setPageLocale(base.locale);
     setPageDirection(base.direction);
 
@@ -90,55 +91,23 @@ class SceneExample {
     }
 
     config.title = !config.title ? getItemTitle(firstItem) : config.title;
+    const viewContainerNode = document.getElementById("viewContainer");
+    if (this.base.config.splitDirection === "vertical") {
+      // vertical is maps stacked vertically. Horizontal is side by side
+      viewContainerNode.classList.add("direction-vertical");
+    }
     setPageTitle(config.title);
-
-    if (config.titlelink) {
-      config.title = `<a href="${config.titlelink}" >${config.title}</a>`;
+    if (config.embed && config.embed === true) { // Hide header if embed property is true
+    } else if (config.header) {
+      this._addHeader(viewContainerNode, config);
     }
 
-    document.getElementById("title").innerHTML = config.title;
     const portalItem: any = this.base.results.applicationItem.value;
     const appProxies =
       portalItem && portalItem.applicationProxies
         ? portalItem.applicationProxies
         : null;
 
-    // Setup splash screen if enabled
-    if (this.base.config.splash) {
-      calcite.init();
-      const splashButton = document.getElementById("splashButton");
-      splashButton.classList.remove("hide");
-      splashButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" class="svg-icon">
-                <path d="M31.297 16.047c0 8.428-6.826 15.25-15.25 15.25S.797 24.475.797 16.047c0-8.424 6.826-15.25 15.25-15.25s15.25 6.826 15.25 15.25zM18 24V12h-4v12h-2v2h8v-2h-2zm0-18h-4v4h4V6z"
-                />
-              </svg>${i18n.tools.about}`;
-
-      document.getElementById(
-        "splashContent"
-      ).innerHTML = this.base.config.splashDesc;
-      document.getElementById(
-        "splashTitle"
-      ).innerHTML = this.base.config.splashTitle;
-      document.getElementById(
-        "splashOkButton"
-      ).innerHTML = this.base.config.splashButtonLabel;
-
-      if (this.base.config.splashOnStart) {
-        // enable splash screen when app loads then
-        // set info in session storage when its closed
-        // so we don't open again this session.
-        if (!sessionStorage.getItem("disableSplash")) {
-          calcite.bus.emit("modal:open", { id: "splash" });
-        }
-        sessionStorage.setItem("disableSplash", "true");
-      }
-    }
-
-    const viewContainerNode = document.getElementById("viewContainer");
-    if (this.base.config.splitDirection === "vertical") {
-      // vertical is maps stacked vertically. Horizontal is side by side
-      viewContainerNode.classList.add("direction-vertical");
-    }
     const defaultViewProperties = getConfigViewProperties(config);
     const item = firstItem;
     const contDiv = document.createElement("div");
@@ -170,6 +139,7 @@ class SceneExample {
       }).then(view => {
         view.when(async () => {
           this.base.config.appProxies = appProxies;
+          this._addSplash(view, this.base.config);
           const insetMap = new InsetMap({
             mainView: view,
             config: this.base.config
@@ -181,48 +151,160 @@ class SceneExample {
         this._addHome(view, this.base.config);
         this._addSearch(view, this.base.config);
         this._createSlideGallery(view, this.base.config);
+        if (this.base.config.splash && this.base.config.embed) {
+          // move splash button to ui
+          const splash = document.getElementById("splashButton");
+          view.ui.add(splash, "top-right");
+        }
       })
     );
     document.body.classList.remove(CSS.loading);
   }
+
+  _applySharedTheme(base) {
+    const { portal, config } = base;
+
+    /* if (portal && portal.portalProperties && portal.portalProperties.sharedTheme) {
+       const theme = portal.portalProperties.sharedTheme;
+       if (theme.body) {
+         //.app-body
+         // background,text, link
+         if (theme.body.background) {
+           config.bodyBackground = theme.body.background;
+         }
+         if (theme.body.text) {
+           config.bodyColor = theme.body.text;
+         }
+       }
+       if (theme.header) {
+         //.app-header
+         //background, text
+         if (theme.header.background) {
+           config.headerBackground = theme.header.background;
+         }
+         if (theme.header.text) {
+           config.headerColor = theme.header.text;
+         }
+       }
+       if (theme.button) {
+         //background text
+         //esri-widget--button
+         if (theme.button.background) {
+           config.buttonBackground = theme.button.background;
+         }
+         if (theme.button.text) {
+           config.buttonColor = theme.button.text;
+         }
+       }
+       if (theme.logo) {
+         //small
+       }
+     }*/
+    // Build and insert style
+    const styles = [];
+    styles.push(config.bodyBackground ? `.app-body{background:${config.bodyBackground};}` : null);
+    styles.push(config.bodyColor ? `.app-body{color:${config.bodyColor};}` : null);
+    styles.push(config.headerBackground ? `.app-header{background:${config.headerBackground};}` : null);
+    styles.push(config.headerColor ? `.app-header{color:${config.headerColor};}.toolbar-buttons{color:${config.headerColor}}` : null);
+    styles.push(config.buttonBackground ? `.app-button{background:${config.buttonBackground};}` : null);
+    styles.push(config.buttonColor ? `.app-button{color:${config.buttonColor};}` : null);
+
+    const style = document.createElement("style");
+    style.appendChild(document.createTextNode(styles.join("")));
+    document.getElementsByTagName("head")[0].appendChild(style);
+
+  }
+  async _addHeader(viewContainerNode, config) {
+    //Add header if specified
+    const Header = await import("./components/Header");
+    if (Header !== null) {
+      this.header = new Header.default({
+        config,
+        container: document.createElement("div")
+      });
+      // position at top or bottom of app
+      const headerContainer = this.header.container as HTMLElement;
+      config.headerPosition === "top" ? document.body.insertBefore(headerContainer, viewContainerNode) : document.body.appendChild(headerContainer);
+    }
+  }
+  async _addSplash(view, config) {
+    if (config.splash) {
+      const Splash = await import("./components/Splash");
+      if (Splash !== null) {
+        const splash = new Splash.default({
+          config,
+          container: document.createElement("div")
+        });
+        document.body.appendChild(splash.container as HTMLElement);
+        const splashToggle = splash.createToolbarButton();
+        if (!config.header) {
+          view.ui.add(splashToggle, "top-right");
+        } else {
+          // This toolbar is created as part of header
+          const toolbar = this.header && this.header.getToolbar();
+          if (toolbar) {
+            toolbar.appendChild(splashToggle);
+          }
+        }
+        splash.showSplash();
+      }
+    }
+  }
   async _addHome(view, config) {
     if (config.home) {
-      const homeRequire = await requireUtils.when(require, [
-        "esri/widgets/Home"
-      ]);
-      if (homeRequire && homeRequire.length && homeRequire.length > 0) {
-        const Home = homeRequire[0];
-
-        const homeWidget = new Home({
-          view
-        });
-
-        view.ui.add(homeWidget, config.homePosition);
-      }
+      const [Home] = await requireUtils.when(require, ["esri/widgets/Home"]);
+      if (!Home) { return };
+      view.ui.add(new Home({ view }), config.homePosition);
     }
   }
   async _addSearch(view, config) {
     if (config.search) {
-      const searchRequire = await requireUtils.when(require, [
+      const [Search, Expand, FeatureLayer] = await requireUtils.when(require, [
         "esri/widgets/Search",
-        "esri/widgets/Expand"
+        "esri/widgets/Expand",
+        "esri/layers/FeatureLayer"
       ]);
-      if (searchRequire && searchRequire.length && searchRequire.length > 1) {
-        const Search = searchRequire[0];
-        const Expand = searchRequire[1];
-        const searchWidget = new Search({
-          view,
-          locationEnabled: true
-        });
-        const expandSearch = new Expand({
-          view,
-          content: searchWidget
-        });
-        if (config.searchExpanded) {
-          expandSearch.expand();
-        }
-        view.ui.add(expandSearch, config.searchPosition);
+      if (!Search && !Expand && !FeatureLayer) {
+        return;
       }
+      const searchProperties: any = {
+        view,
+        locationEnabled: true
+      };
+
+      // Get any configured search settings
+      if (config.searchConfig) {
+        if (config.searchConfig.sources) {
+          const sources = config.searchConfig.sources;
+          searchProperties.sources = sources.filter((source) => {
+            if (source.flayerId && source.url) {
+              const layer = view.map.findLayerById(source.flayerId);
+              source.featureLayer = layer ? layer : new FeatureLayer(source.url);
+            }
+            return source;
+          });
+        }
+        if (searchProperties.sources && searchProperties.sources.length && searchProperties.sources.length > 0) {
+          searchProperties.includeDefaultSources = false;
+        }
+        searchProperties.searchAllEnabled = this.base.config.searchConfig.enableSearchingAll || true;
+        if (this.base.config.searchConfig.activeSourceIndex && searchProperties.sources && searchProperties.sources.length >= this.base.config.searchConfig.activeSourceIndex) {
+          searchProperties.activeSourceIndex = this.base.config.searchConfig.activeSourceIndex;
+        }
+      }
+
+      const content = new Search(searchProperties);
+      const expandSearch = new Expand({
+        view,
+        expandTooltip: i18n.tools.search,
+        group: config.searchPosition,
+        content
+      });
+      if (config.searchExpanded) {
+        expandSearch.expand();
+      }
+      view.ui.add(expandSearch, config.searchPosition);
+
     }
   }
   async _createSlideGallery(view, config) {
@@ -235,93 +317,101 @@ class SceneExample {
         view.map.presentation.slides &&
         view.map.presentation.slides.length > 0
       ) {
-        const slideRequire = await requireUtils.when(require, [
+        const [Expand, CustomBookmarks] = await requireUtils.when(require, [
           "esri/widgets/Expand",
-          "./CustomBookmarks"
+          "./components/CustomBookmarks"
         ]);
-        if (slideRequire && slideRequire.length && slideRequire.length > 1) {
-          const Expand = slideRequire[0];
-          const CustomBookmarks = slideRequire[1];
+        if (!Expand && !CustomBookmarks) { return; }
 
-          const slideContainer = new CustomBookmarks({
-            view
-          });
-          slideContainer.containerTitle = this.base.config.slidesTitle;
+        const expand = new Expand({
+          view: view,
+          expandTooltip: i18n.tools.bookmarks.label,
+          content: new CustomBookmarks({
+            view,
+            containerTitle: this.base.config.slidesTitle
+          }),
+          group: config.slidePosition
+        });
+        view.ui.add(expand, config.slidesPosition);
 
-          const expand = new Expand({
-            view: view,
-            content: slideContainer,
-            group: config.slidePosition
-          });
-          view.ui.add(expand, config.slidesPosition);
-        }
       }
     }
   }
   async _addMeasureWidgets(view, config) {
     if (config.measurement) {
-      const measureRequire = await requireUtils.when(require, [
+      const [DirectLineMeasurement3D, AreaMeasurement3D, Slice] = await requireUtils.when(require, [
         "esri/widgets/DirectLineMeasurement3D",
-        "esri/widgets/AreaMeasurement3D"
+        "esri/widgets/AreaMeasurement3D",
+        "esri/widgets/Slice"
       ]);
-      if (
-        measureRequire &&
-        measureRequire.length &&
-        measureRequire.length > 1
-      ) {
-        const DirectLineMeasurement3D = measureRequire[0];
-        const AreaMeasurement3D = measureRequire[1];
 
-        const nav = document.createElement("nav");
-        nav.classList.add("leader-1");
+      const nav = document.createElement("nav");
+      nav.classList.add("leader-1");
+      let buttons = [];
 
-        let measureTool = null;
-        let type;
-        nav.appendChild(this._createMeasureButton("area"));
-        nav.appendChild(this._createMeasureButton("line"));
-        nav.addEventListener("click", e => {
-          const button = e.target as HTMLButtonElement;
-
-          if (measureTool) {
-            measureTool.destroy();
-            view.ui.remove(measureTool);
-          }
-          // don't recreate if its the same button
-          if (type && type === button.dataset.type) {
-            type = null;
-          } else {
-            type = button.dataset.type;
-            if (type === "area") {
-              measureTool = new AreaMeasurement3D({
-                view
-              });
-            } else {
-              measureTool = new DirectLineMeasurement3D({
-                view
-              });
-            }
-            view.ui.add(measureTool, config.measurementPosition);
-          }
-        });
-        view.ui.add(nav, config.measurementPosition);
+      let measureTool = null;
+      if (config.measurementOptions === "area" || config.measurementOptions === "both") {
+        buttons.push(this._createMeasureButton("area"));
       }
+      if (config.measurementOptions === "line" || config.measurementOptions === "both") {
+        buttons.push(this._createMeasureButton("line"));
+      }
+      if (config.slice) {
+        buttons.push(this._createMeasureButton("slice"));
+      }
+      buttons.forEach(button => nav.appendChild(button));
+      nav.addEventListener("click", e => {
+        const activeButton = e.target as HTMLButtonElement;
+
+        const isActive = activeButton.classList.contains("active");
+
+        // Deactivate all buttons
+        buttons.forEach(button => button.classList.remove("active"));
+        this._destroyMeasureButton(view, measureTool);
+
+        if (!isActive) {
+          const buttonType = activeButton.dataset.type;
+          activeButton.classList.add("active");
+          if (buttonType === "area") {
+            measureTool = new AreaMeasurement3D({ view });
+            measureTool.viewModel.newMeasurement();
+          } else if (buttonType === "line") {
+            measureTool = new DirectLineMeasurement3D({ view });
+            measureTool.viewModel.newMeasurement();
+          } else if (buttonType === "slice") {
+            measureTool = new Slice({ view });
+          }
+          view.ui.add(measureTool, config.measurementPosition);
+        }
+      });
+      view.ui.add(nav, config.measurementPosition);
+
     }
+  }
+  _destroyMeasureButton(view, tool) {
+    if (!tool) {
+      return;
+    }
+    view.ui.remove(tool);
+    tool.destroy();
+    tool = null;
   }
   _createMeasureButton(type) {
     const button = document.createElement("button");
-    const icon = type === "area" ? "esri-icon-polygon" : "esri-icon-polyline";
-    const label =
-      type === "area" ? i18n.tools.measureArea : i18n.tools.measureLine;
+    let icon, label;
+    if (type === "area") {
+      icon = "esri-icon-polygon";
+      label = i18n.tools.measureArea;
+    } else if (type === "line") {
+      icon = "esri-icon-minus";
+      label = i18n.tools.measureLine;
+    } else if (type === "slice") {
+      icon = "esri-icon-hollow-eye";
+      label = "Slice"; // hard-code name for testing
+    }
     button.dataset.type = type;
-    button.classList.add(
-      "esri-widget-button",
-      "btn",
-      "btn-white",
-      "btn-grouped",
-      icon
-    );
+    button.classList.add(...["esri-widget--button", "esri-widget", "btn", "btn-white", "btn-grouped", icon]);
     button.title = label;
-
     button.setAttribute("aria-label", label);
     return button;
   }
