@@ -25,7 +25,7 @@
     "calcite-web": "github:Esri/calcite-web#v1.0.1",
     "cpx": "^1.5.0",
     "dojo-typings": "^1.11.9",
-    "node-sass": "^4.9.3",
+    "node-sass": "^6.0.1",
     "npm-run-all": "^4.1.5",
     "postcss-normalize-charset": "^1.1.0",
     "tslint": "^5.11.0",
@@ -39,6 +39,5 @@
     "build:sass": "./node_modules/.bin/node-sass styles/main.scss styles/main.css",
     "watch:sass": "./node_modules/.bin/node-sass --watch styles/main.scss styles/main.css",
     "deploy": "npm run build:sass & npm run build:ts & npm run copy:node_modules"
-  },
-  "dependencies": {}
+  }
 }
