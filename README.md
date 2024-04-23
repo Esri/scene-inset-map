@@ -1,4 +1,7 @@
-# scene-inset-map
+
+ArcGIS Configurable Apps will be retired in 2025. The ArcGIS Configurable Apps source code repro is deprecated and will not receive further updates. In addition, this repository will be removed in October 2025, along with the October 2025 ArcGIS Online update.
+
+# Deprected: scene-inset-map
 Scene with inset map is a configurable app template for visualizing web scenes with the inclusion of an inset map to help orient users, especially useful when viewing at larger scales.
 
 
